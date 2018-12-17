@@ -1,0 +1,99 @@
+import numpy as np
+import pandas as pd 
+import matplotlib.pyplot as plt
+
+X_1 =r'C:\Users\TCBGULSEREN\Machine Learning\Deep Learning\Sign_Language\X.npy'
+Y_1 =r'C:\Users\TCBGULSEREN\Machine Learning\Deep Learning\Sign_Language\Y.npy'
+x_1 = np.load(X_1)
+y_1 = np.load(Y_1)
+
+#İmage size
+img_size = 64
+
+'''
+sign zero is between indexes 204 and 408
+sign one is between indexes 822 and 1027
+'''
+#resimlerin oldugu x1 de 260.fotoyu çiz
+plt.subplot(1 , 2 , 1)
+plt.imshow(x_1[260].reshape(img_size , img_size))
+plt.axis('off')
+
+plt.subplot(1 , 2 , 2)
+plt.imshow(x_1[900].reshape(img_size , img_size))
+plt.axis('off')
+
+#0 ve 1 resimlerini tek array de alt alta topladık
+X = np.concatenate((x_1[204:409], x_1[822:1027]) , axis=0)
+
+z=np.zeros(205)
+o=np.ones(205)
+
+Y =np.concatenate((z, o) , axis=0).reshape(X.shape[0],1)
+
+print('X shape:' , X.shape)
+print('Y shape:' , Y.shape)
+
+
+#Datayı test ve train olarak bölüyoruz
+from sklearn.model_selection import train_test_split
+
+X_train, X_test,Y_train,Y_test = train_test_split(X,Y,test_size=0.15,random_state=42)
+number_of_train =X_train.shape[0]
+number_of_test =X_test.shape[0]
+
+#3 Boyutlu resim arrayini iki boyuta getiriyoruz
+X_train_flatten = X_train.reshape(number_of_train,X_train.shape[1]*X_train.shape[2])
+X_test_flatten = X_test.reshape(number_of_test,X_test.shape[1]*X_test.shape[2])
+
+print('X_train_flatten:' , X_train_flatten.shape)
+print('X_test_flatten:' , X_test_flatten.shape)
+
+
+'''
+#Matris çarpımının yapılabilmesi için transpoz alınıyor
+x_train = X_train_flatten.T
+x_test = X_test_flatten.T
+y_train =Y_train.T
+y_test =Y_test.T
+
+print('x_train:',x_train.shape)
+print('x_test:',x_test.shape)
+print('y_train:',y_train.shape)
+print('y_test:',y_test.shape)
+'''
+
+from sklearn.linear_model import LogisticRegression
+Log_R = LogisticRegression(random_state=42 , max_iter =150)
+Log_R.fit(X_train_flatten,Y_train)
+
+tahmin = Log_R.predict(X_test_flatten)
+print(tahmin)
+
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(Y_test,tahmin)
+print('Logistic Regression Prediction:')
+print(cm)
+
+print(X_train_flatten.shape[1])
+
+
+import keras
+from keras.models import Sequential #ysa oluşturuyor
+from keras.layers import Dense #ysa ve nöronları oluşturacağımız nesneleri içerir
+
+classifier = Sequential() #ysa oluştu boş
+
+classifier.add(Dense(20,init = 'uniform', activation = 'relu',input_dim = X_train_flatten.shape[1]))
+classifier.add(Dense(8,init = 'uniform', activation = 'relu'))
+classifier.add(Dense(1,init = 'uniform', activation = 'sigmoid'))
+classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy',metrics=['accuracy'])
+
+classifier.fit(X_train_flatten,Y_train ,epochs=100)
+y_pred = classifier.predict(X_test_flatten)
+
+y_pred =(y_pred > 0.5)#üstü 1 altı 0
+
+from sklearn.metrics import confusion_matrix
+cm=confusion_matrix(Y_test,y_pred)
+print(cm)
